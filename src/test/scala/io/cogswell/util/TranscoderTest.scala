@@ -3,7 +3,7 @@ package io.cogswell.util
 import org.scalatest._
 
 class TranscoderTest extends FlatSpec with Matchers {
-  "transcoder" should "assemble a Str which contains the string" in {
+  "Transcoder" should "assemble a Str which contains the string" in {
     Transcoder.string("test").string should be ("test")
   }
   

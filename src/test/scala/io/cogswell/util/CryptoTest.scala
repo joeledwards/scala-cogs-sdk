@@ -15,7 +15,7 @@ class CryptoTest extends FlatSpec with Matchers {
     Transcoder.bytes(bytes).hex.string
   }
   
-  "crypto: hash" should "generate a correct MD5 digest" in {
+  "Crypto: hash" should "generate a correct MD5 digest" in {
     val hexDigest = "9e107d9d372bb6826bd81d3542a419d6"
     val digest = rawDigest(hexDigest)
     hex(Crypto.md5(message)) should be (hexDigest)
@@ -43,7 +43,7 @@ class CryptoTest extends FlatSpec with Matchers {
     Crypto.sha512(message) should be (digest)
   }
   
-  "crypto: hmac" should "generate a correct MD5 HMAC" in {
+  "Crypto: hmac" should "generate a correct MD5 HMAC" in {
     val hexDigest = "80070713463e7749b90c2dc24911e275"
     val digest = rawDigest(hexDigest)
     hex(Crypto.hmacMd5(hmacKey, message)) should be (hexDigest)
