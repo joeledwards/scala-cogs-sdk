@@ -7,7 +7,7 @@ object Transcoder {
     /**
      * Hex encode the bytes.
      */
-    def hex: Str = Str(DatatypeConverter.printHexBinary(bytes))
+    def hex: Str = Str(DatatypeConverter.printHexBinary(bytes).toLowerCase)
     
     /**
      * Base-64 encode the bytes.
