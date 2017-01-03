@@ -38,10 +38,11 @@ class PubSubHandle(
   type Channel = String
   type Message = String
   type Record = String
+  type Sequence = String
   
   type MessageHandler = (Channel, Message) => Unit
   type RecordHandler = (Record) => Unit
-  type ErrorHandler = (Throwable) => Unit
+  type ErrorHandler = (Throwable, Option[Sequence], Option[Channel]) => Unit
   type CloseHandler = (Option[Throwable]) => Unit
   type ReconnectHandler = () => Unit
   
@@ -72,7 +73,7 @@ class PubSubHandle(
         }
         
         Try(closeHandler.foreach(_(cause))) match {
-          case Failure(error) => errorHandler.foreach(_(error))
+          case Failure(error) => errorHandler.foreach(_(error, None, None))
           case Success(_) =>
         }
       })
