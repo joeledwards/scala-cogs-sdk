@@ -2,11 +2,13 @@ package io.cogswell.pubsub
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.Duration
+import java.util.UUID
 
 case class PubSubOptions (
   url: String,
   autoReconnect: Boolean = true,
-  connectTimeout: Duration = Duration(30, TimeUnit.SECONDS)
+  connectTimeout: Duration = Duration(30, TimeUnit.SECONDS),
+  sessionUuid: Option[UUID] = None
 )
 
 object PubSubOptions {

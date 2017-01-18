@@ -4,24 +4,28 @@ import play.api.libs.json.Json
 import io.cogswell.util.Crypto
 import io.cogswell.util.Transcoder
 import io.cogswell.util.Time
+import java.util.UUID
+import play.api.libs.json.JsString
+
+case class CogsAuthData(
+    hmac: String,
+    payload: String
+)
+
+case class CogsKey(
+    perm: String,
+    identity: String,
+    key: String
+)
 
 object CogsAuth {
-  case class CogsAuthData(
-      hmac: String,
-      payload: String
-  )
-  
-  case class CogsKey(
-      perm: String,
-      identity: String,
-      key: String
-  )
-  
   /**
    * Generate the authentication content for the connect request from
    * a Seq of keys.
    */
-  def authContent(keys: Seq[String]): Option[CogsAuthData] = {
+  def authContent(
+      keys: Seq[String], sessionUuid: Option[UUID] = None
+  ): Option[CogsAuthData] = {
     val cogsKeys = keys.map(splitKey(_)).filter(_.isDefined).map(_.get)
     
     if (cogsKeys.size < 1) {
@@ -31,11 +35,16 @@ object CogsAuth {
       val permissions = cogsKeys.map(_.perm).mkString("")
       val timestamp = Time.nowIso
       
-      val json = Json.obj(
-          "identity" -> identity,
-          "permissions" -> permissions,
-          "security_timestamp" -> timestamp
+      val baseJson =  Json.obj(
+        "identity" -> identity,
+        "permissions" -> permissions,
+        "security_timestamp" -> timestamp
       )
+      
+      val json = sessionUuid match {
+        case Some(uuid) => baseJson ++ Json.obj("session_uuid" -> uuid.toString)
+        case None => baseJson
+      }
       
       val message = Transcoder.string(json.toString).utf8
       val payload = message.base64
@@ -56,7 +65,7 @@ object CogsAuth {
     }
   }
   
-  private def splitKey(key: String): Option[CogsKey] = {
+  def splitKey(key: String): Option[CogsKey] = {
     key.split("-") match {
       case Array(perm, identity, key) => Some(CogsKey(perm, identity, key))
       case _ => None

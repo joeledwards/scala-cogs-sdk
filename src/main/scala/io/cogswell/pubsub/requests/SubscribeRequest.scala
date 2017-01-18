@@ -10,7 +10,7 @@ case class SubscribeRequest(
   def toJson: JsValue = {
     Json.obj(
         "seq" -> sequence,
-        "action" -> "publish",
+        "action" -> "subscribe",
         "chan" -> channel
     )
   }
