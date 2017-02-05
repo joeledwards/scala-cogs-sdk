@@ -35,7 +35,7 @@ object Crypto {
   def sha256(message: Array[Byte]): Array[Byte] = digest(SHA256, message)
   def sha512(message: Array[Byte]): Array[Byte] = digest(SHA512, message)
   
-  def hmacMd5(key: Array[Byte], message: Array[Byte]) = hmac(HMAC_MD5, key, message)
-  def hmacSha1(key: Array[Byte], message: Array[Byte]) = hmac(HMAC_SHA1, key, message)
-  def hmacSha256(key: Array[Byte], message: Array[Byte]) = hmac(HMAC_SHA256, key, message)
+  def hmacMd5(key: Array[Byte], message: Array[Byte]): Array[Byte] = hmac(HMAC_MD5, key, message)
+  def hmacSha1(key: Array[Byte], message: Array[Byte]): Array[Byte] = hmac(HMAC_SHA1, key, message)
+  def hmacSha256(key: Array[Byte], message: Array[Byte]): Array[Byte] = hmac(HMAC_SHA256, key, message)
 }

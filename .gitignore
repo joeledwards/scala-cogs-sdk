@@ -5,3 +5,8 @@
 /project/target/
 /target/
 /bin/
+/.cache-main
+/.cache-tests
+/.classpath
+/.project
+/.settings/
