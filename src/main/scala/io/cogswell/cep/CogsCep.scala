@@ -13,7 +13,7 @@ import play.api.libs.json.JsObject
 import play.api.libs.json.JsValue
 import play.api.libs.json.JsSuccess
 import play.api.libs.json.JsError
-import io.cogswell.cep.exceptions.CepConfigException
+import io.cogswell.exceptions.CepConfigException
 import scala.concurrent.ExecutionContext
 import scala.util.Failure
 

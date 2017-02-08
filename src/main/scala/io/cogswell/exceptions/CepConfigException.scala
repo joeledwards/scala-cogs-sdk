@@ -1,4 +1,4 @@
-package io.cogswell.cep.exceptions
+package io.cogswell.exceptions
 
 import play.api.libs.json.JsError
 

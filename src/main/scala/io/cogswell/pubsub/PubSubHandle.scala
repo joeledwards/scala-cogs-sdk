@@ -40,24 +40,19 @@ class PubSubHandle(val keys: Seq[String], val options: PubSubOptions)(
   type RawRecord = String
   type Sequence = String
   
-  type MessageHandler = (Channel, Message) => Unit
-  type RawRecordHandler = (RawRecord) => Unit
-  type ErrorHandler = (Throwable, Option[Sequence], Option[Channel]) => Unit
-  type CloseHandler = (Option[Throwable]) => Unit
-  type NewSessionHandler = (UUID) => Unit
-  type ReconnectHandler = () => Unit
+  type EventHandler = PartialFunction[PubSubEvent, Unit]
+  type MessageHandler = PubSubMessageEvent => Unit
   
-  private var messageHandler: Option[MessageHandler] = None
-  private var rawRecordHandler: Option[RawRecordHandler] = None
-  private var errorHandler: Option[ErrorHandler] = None
-  private var closeHandler: Option[CloseHandler] = None
-  private var newSessionHandler: Option[NewSessionHandler] = None
-  private var reconnectHandler: Option[ReconnectHandler] = None
+  private var eventHandler: Option[EventHandler] = None
   
   private val setupPromise: Promise[PubSubHandle] = Promise[PubSubHandle]
   private val done: MarkOnce = new MarkOnce
   private val sequence: AtomicLong = new AtomicLong(0)
-  private val reconnectDelay: Duration = Duration(15, TimeUnit.SECONDS)
+  
+  // TODO: implement back-off reconnect delay
+  private val maxReconnectDelay: Duration = Duration(300, TimeUnit.SECONDS)
+  private val defaultReconnectDelay: Duration = Duration(15, TimeUnit.SECONDS)
+  private val reconnectDelay: Option[Duration] = None
   
   private var socket: Option[PubSubSocket] = None
   private var sessionId: Option[UUID] = None
@@ -67,22 +62,50 @@ class PubSubHandle(val keys: Seq[String], val options: PubSubOptions)(
   
   reconnect()
   
+  /**
+   * Send events to event handler if it is populated and defined for the value.
+   */
+  private def sendEvent(event: PubSubEvent): Unit = {
+    eventHandler.foreach { handler =>
+      if (handler.isDefinedAt(event)) {
+        handler(event)
+      }
+    }
+  }
+  
   private def reconnect()(
       implicit ec: ExecutionContext
   ): Unit = {
     if (!done.isMarked) {
       val sock = new PubSubSocket(keys, options)
       
-      sock.onClose(cause => {
-        if (!done.isMarked) {
-          Scheduler.schedule(reconnectDelay)(reconnect)
+      sock.onEvent {
+        case SocketCloseEvent(cause) => {
+          if (!done.isMarked) {
+            Scheduler.schedule(defaultReconnectDelay)(reconnect)
+          }
+          
+          Try(sendEvent(PubSubCloseEvent(cause))) match {
+            case Failure(error) => sendEvent(PubSubErrorEvent(error, None, None))
+            case Success(_) =>
+          }
         }
-        
-        Try(closeHandler.foreach(_(cause))) match {
-          case Failure(error) => errorHandler.foreach(_(error, None, None))
-          case Success(_) =>
+        case SocketErrorEvent(error) => {
+          Try(sendEvent(PubSubErrorEvent(error, None, None))) match {
+            case Failure(error) => sendEvent(PubSubErrorEvent(error, None, None))
+            case Success(_) =>
+          }
         }
-      })
+        case SocketRecordEvent(record) => {
+          // TODO: parse the event
+          /*
+          Try(sendEvent(PubSubMessageEvent(message))) match {
+            case Failure(error) => sendEvent(PubSubErrorEvent(error, None, None))
+            case Success(_) =>
+          }
+          */
+        }
+      }
       
       socket = Some(sock)
       
@@ -96,7 +119,7 @@ class PubSubHandle(val keys: Seq[String], val options: PubSubOptions)(
             case Success(uuid) => {
               sessionId match {
                 case Some(`uuid`) =>
-                case _ => newSessionHandler.foreach(_(uuid))
+                case _ => sendEvent(PubSubNewSessionEvent(uuid))
               }
               
               sessionId = Some(uuid)
@@ -251,55 +274,15 @@ class PubSubHandle(val keys: Seq[String], val options: PubSubOptions)(
     if (done.mark) {
       socket.foreach(_.close)
       socket = None
-      closeHandler.foreach(_(None))
+      sendEvent(PubSubCloseEvent(None))
     }
   }
   
   /**
-   * Registers the general message handler, which will be called when a message is
-   * received from any channel.
+   * Supply a handler for any of the events which may be supplied by the
    * 
-   * @param handler a MessageHandler
+   * @param handler a PartialFunction which can handle any number of the
+   * sub types of PubSubEvent
    */
-  def onMessage(handler: MessageHandler): Unit = messageHandler = Option(handler)
-  
-  /**
-   * Register an error handler, which will be called when an error occurs.
-   * 
-   * @param handler an ErrorHandler
-   */
-  def onError(handler: ErrorHandler): Unit = errorHandler = Option(handler)
-  
-  /**
-   * Register a handler for all raw records (the un-parsed JSON). This will be called
-   * for every record that is received from the Pub/Sub server, whether response
-   * or message.
-   * 
-   * @param handler a RawRecordHandler
-   */
-  def onRecord(handler: RawRecordHandler): Unit = rawRecordHandler = Option(handler)
-  
-  /**
-   * Register the reconnect handler, which will be called whenever the connection
-   * is automatically replaced.
-   * 
-   * @param handler a ReconnectHandler
-   */
-  def onReconnect(handler: ReconnectHandler): Unit = reconnectHandler = Option(handler)
-  
-  /**
-   * Register an error handler, which will be called when the connection is closed,
-   * whether cleanly, or as the result of an error.
-   * 
-   * @param handler a CloseHandler
-   */
-  def onClose(handler: CloseHandler): Unit = closeHandler = Option(handler)
-  
-  /**
-   * Register a new session handler, which will be called when the session is
-   * first created or replaced, resulting in all subscriptions being lost.
-   * 
-   * @param handler a NewSessionHandler
-   */
-  def onSessionReplaced(handler: NewSessionHandler): Unit = newSessionHandler = Option(handler)
+  def onEvent(handler: EventHandler): Unit = eventHandler = Option(handler)
 }
