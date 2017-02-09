@@ -35,11 +35,6 @@ import java.util.concurrent.TimeUnit
 class PubSubHandle(val keys: Seq[String], val options: PubSubOptions)(
     implicit ec: ExecutionContext
 ) {
-  type Channel = String
-  type Message = String
-  type RawRecord = String
-  type Sequence = String
-  
   type EventHandler = PartialFunction[PubSubEvent, Unit]
   type MessageHandler = PubSubMessageEvent => Unit
   
