@@ -11,7 +11,7 @@ case class SubscribeRequest(
     Json.obj(
         "seq" -> sequence,
         "action" -> "subscribe",
-        "chan" -> channel
+        "channel" -> channel
     )
   }
 }

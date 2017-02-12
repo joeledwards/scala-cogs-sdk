@@ -76,6 +76,8 @@ class PubSubHandle(val keys: Seq[String], val options: PubSubOptions)(
       
       sock.onEvent {
         case SocketCloseEvent(cause) => {
+          println(s"Socket closed: $cause")
+          
           if (!done.isMarked) {
             Scheduler.schedule(defaultReconnectDelay)(reconnect)
           }
@@ -86,12 +88,16 @@ class PubSubHandle(val keys: Seq[String], val options: PubSubOptions)(
           }
         }
         case SocketErrorEvent(error) => {
+          println(s"Socket error: $error")
+          
           Try(sendEvent(PubSubErrorEvent(error, None, None))) match {
             case Failure(error) => sendEvent(PubSubErrorEvent(error, None, None))
             case Success(_) =>
           }
         }
         case SocketRecordEvent(record) => {
+          println(s"Socket record: $record")
+          
           // TODO: parse the event
           /*
           Try(sendEvent(PubSubMessageEvent(message))) match {
@@ -104,9 +110,12 @@ class PubSubHandle(val keys: Seq[String], val options: PubSubOptions)(
       
       socket = Some(sock)
       
-      sock.connect() onComplete {
+      sock.connect(sessionId) onComplete {
         case Success(_) => {
-          setupPromise.success(this)
+          if (!setupPromise.isCompleted) {
+            setupPromise.success(this)
+          }
+          
           getSessionUuid() onComplete {
             case Failure(error) => {
               sessionId = None
@@ -122,7 +131,10 @@ class PubSubHandle(val keys: Seq[String], val options: PubSubOptions)(
           }
         }
         case Failure(error) => {
-          setupPromise.failure(error)
+          if (!setupPromise.isCompleted) {
+            setupPromise.failure(error)
+          }
+          
           done.mark
         }
       }

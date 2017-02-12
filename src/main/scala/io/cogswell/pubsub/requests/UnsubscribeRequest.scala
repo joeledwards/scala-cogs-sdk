@@ -11,7 +11,7 @@ case class UnsubscribeRequest(
     Json.obj(
         "seq" -> sequence,
         "action" -> "unsubscribe",
-        "chan" -> channel
+        "channel" -> channel
     )
   }
 }

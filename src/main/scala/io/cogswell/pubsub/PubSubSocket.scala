@@ -21,7 +21,12 @@ import scala.util.Success
 import org.reactivestreams.Publisher
 import org.reactivestreams.Subscriber
 import scala.collection.mutable.MutableList
+import scala.collection.immutable.{Seq => ImmuteSeq}
 import scala.util.Try
+import akka.http.scaladsl.model.HttpHeader
+import akka.http.scaladsl.model.headers.RawHeader
+import java.util.UUID
+import io.cogswell.exceptions.PubSubException
 
 class PubSubSocket(
     val keys: Seq[String],
@@ -85,19 +90,31 @@ class PubSubSocket(
     Flow.fromSinkAndSourceMat(recordSink, recordSource)(Keep.left)
   }
   
-  def connect()(implicit ec: ExecutionContext): Future[Unit] = {
-    val (upgrade, closed) = Http().singleWebSocketRequest(
-      WebSocketRequest(options.url), messageFlow
-    )
-    
-    closed onComplete {
-      case Success(_) => eventHandler.foreach(_(SocketCloseEvent(None)))
-      case Failure(error) => eventHandler.foreach(_(SocketCloseEvent(Some(error))))
+  def connect(sessionUuid: Option[UUID])(implicit ec: ExecutionContext): Future[Unit] = {
+    CogsAuth.authContent(keys, sessionUuid) match {
+      case None => Future.failed(new PubSubException("Could not construct auth content."))
+      case Some(CogsAuthData(hmac, payload)) => {
+        val headers = ImmuteSeq(Seq(
+          RawHeader("Payload", payload),
+          RawHeader("PayloadHMAC", hmac)
+        ): _*)
+        
+        val (upgrade, closed) = Http().singleWebSocketRequest(
+          WebSocketRequest(options.url, headers), messageFlow
+        )
+        
+        closed onComplete {
+          case Success(_) => eventHandler.foreach(_(SocketCloseEvent(None)))
+          case Failure(error) => eventHandler.foreach(_(SocketCloseEvent(Some(error))))
+        }
+        
+        upgrade map { ug =>
+          println(s"Upgrade result: $ug")
+          ug.response.status.intValue
+        }
+      }
     }
     
-    upgrade map { ug =>
-      ug.response.status.intValue
-    }
   }
   
   def close(): Unit = {
