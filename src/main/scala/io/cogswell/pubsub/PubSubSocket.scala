@@ -27,6 +27,7 @@ import akka.http.scaladsl.model.HttpHeader
 import akka.http.scaladsl.model.headers.RawHeader
 import java.util.UUID
 import io.cogswell.exceptions.PubSubException
+import io.cogswell.util.Futures
 
 class PubSubSocket(
     val keys: Seq[String],
@@ -108,9 +109,18 @@ class PubSubSocket(
           case Failure(error) => eventHandler.foreach(_(SocketCloseEvent(Some(error))))
         }
         
-        upgrade map { ug =>
-          println(s"Upgrade result: $ug")
-          ug.response.status.intValue
+        Futures.translate(upgrade) {
+          case Success(ug) => {
+            println(s"Upgrade result: $ug")
+            
+            ug.response.status.intValue() match {
+              case 101 => Future.successful(101)
+              case code => Future.failed(PubSubException(
+                  s"Error establishing the WebSocket: [$code]"
+              ))
+            }
+          }
+          case Failure(error) => Future.failed(error)
         }
       }
     }
