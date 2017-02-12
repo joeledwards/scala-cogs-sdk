@@ -113,10 +113,15 @@ class PubSubSocket(
           case Success(ug) => {
             println(s"Upgrade result: $ug")
             
-            ug.response.status.intValue() match {
+            val status = ug.response.status
+            val code = status.intValue
+            val message = status.defaultMessage()
+            val reason = status.reason
+            
+            code match {
               case 101 => Future.successful(101)
               case code => Future.failed(PubSubException(
-                  s"Error establishing the WebSocket: [$code]"
+                  s"Error establishing the WebSocket: [$code] $reason: $message"
               ))
             }
           }
