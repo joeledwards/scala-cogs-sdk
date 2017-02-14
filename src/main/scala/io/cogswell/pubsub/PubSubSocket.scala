@@ -36,9 +36,17 @@ class PubSubSocket(
   implicit val system = PubSubSocket.system
   implicit val materializer = PubSubSocket.materializer
   
-  type EventHandler = (SocketEvent) => Unit
+  type EventHandler = PartialFunction[SocketEvent, Unit]
   
   private var eventHandler: Option[EventHandler] = None
+  
+  def handleEvent(event: SocketEvent): Unit = {
+    eventHandler.foreach { handler =>
+      if (handler.isDefinedAt(event)) {
+        handler(event)
+      }
+    }
+  }
   
   object Publisher extends Publisher[Message] {
     val subscribers = new MutableList[Subscriber[_ >: Message]]
@@ -55,7 +63,7 @@ class PubSubSocket(
             case Some(error) => subscriber.onError(error)
           }
         } match {
-          case Failure(error) => eventHandler.foreach(_(SocketErrorEvent(error)))
+          case Failure(error) => handleEvent(SocketErrorEvent(error))
           case _ =>
         }
       }
@@ -66,7 +74,7 @@ class PubSubSocket(
         Try {
           subscriber.onNext(message)
         } match {
-          case Failure(error) => eventHandler.foreach(_(SocketErrorEvent(error)))
+          case Failure(error) => handleEvent(SocketErrorEvent(error))
           case _ =>
         }
       }
@@ -79,9 +87,9 @@ class PubSubSocket(
     Sink.foreach { case message: TextMessage.Strict =>
       Try {
         val json = Json.parse(message.text)
-        eventHandler.foreach(_(SocketRecordEvent(json)))
+        handleEvent(SocketRecordEvent(json))
       } match {
-        case Failure(error) => eventHandler.foreach(_(SocketErrorEvent(error)))
+        case Failure(error) => handleEvent(SocketErrorEvent(error))
         case _ =>
       }
     }
