@@ -1,9 +1,13 @@
 package io.cogswell.pubsub.responses
 
-import play.api.libs.json._
-import play.api.libs.json.Reads._
-import play.api.libs.functional.syntax._
-import scala.util.Try
+import io.cogswell.pubsub.records.ServerRecord
+import play.api.libs.functional.syntax.toFunctionalBuilderOps
+import play.api.libs.json.JsPath
+import play.api.libs.json.JsResult
+import play.api.libs.json.JsValue
+import play.api.libs.json.Reads
+import play.api.libs.json.Reads.IntReads
+import play.api.libs.json.Reads.StringReads
 
 case class InvalidRequestResponse(
     action: String,
@@ -11,11 +15,13 @@ case class InvalidRequestResponse(
     message: String,
     details: Option[String],
     badRequest: Option[String]
-) extends ServerResponse[InvalidRequestResponse] {
-  override val requiredAction = None
-  override val requiredCode = Some(400)
-  override def self = this
-}
+) extends ServerRecord(
+    recordSequence = None,
+    recordAction = Some(action),
+    recordCode = Some(code),
+    requiredAction = None,
+    requiredCode = Some(400)
+)
 
 object InvalidRequestResponse {
   lazy implicit val eventRecordReads: Reads[InvalidRequestResponse] = (

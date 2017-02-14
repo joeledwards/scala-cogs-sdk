@@ -5,6 +5,7 @@ import play.api.libs.json.Reads._
 import play.api.libs.functional.syntax._
 import scala.util.Try
 import java.util.UUID
+import io.cogswell.pubsub.records.ServerRecord
 
 case class PublishNotFoundResponse(
     sequence: Long,
@@ -12,11 +13,13 @@ case class PublishNotFoundResponse(
     code: Int,
     message: String,
     details: Option[String]
-) extends ServerResponse[PublishNotFoundResponse] with SequencedResponse {
-  override val requiredAction = Some("pub")
-  override val requiredCode = Some(404)
-  override def self = this
-}
+) extends ServerRecord(
+    recordSequence = Some(sequence),
+    recordAction = Some(action),
+    recordCode = Some(code),
+    requiredAction = Some("pub"),
+    requiredCode = Some(404)
+)
 
 object PublishNotFoundResponse {
   lazy implicit val eventRecordReads: Reads[PublishNotFoundResponse] = (

@@ -15,10 +15,13 @@ case class MessageRecord(
     time: DateTime,
     channel: String,
     message: String
-) extends ServerRecord[MessageRecord] {
-  override val requiredAction = Some("msg")
-  override def self = this
-}
+) extends ServerRecord(
+    recordSequence = None,
+    recordAction = Some(action),
+    recordCode = None,
+    requiredAction = Some("msg"),
+    requiredCode = None
+)
 
 object MessageRecord {
   lazy implicit val eventRecordReads: Reads[MessageRecord] = (

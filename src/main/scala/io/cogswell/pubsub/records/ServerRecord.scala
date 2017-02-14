@@ -16,34 +16,40 @@ import io.cogswell.exceptions.CogsParseException
 /**
  * This class represents any type of record received from the server.
  */
-abstract class ServerRecord[Self <: ServerRecord[Self]] {
-  val requiredAction: Option[String]
-  val action: String
+abstract class ServerRecord(
+  val recordSequence: Option[Long],
+  val recordAction: Option[String],
+  val recordCode: Option[Int],
+  val requiredAction: Option[String],
+  val requiredCode: Option[Int]
+) {
+  def isErrorResponse: Boolean = recordCode.map(_ != 200).getOrElse(false)
   
-  def self: Self
-  
-  /**
-   * Validate that the action matches if it is required.
-   */
-  def validate: Try[Self] = {
-    val v: Try[Self] = requiredAction match {
-      case Some(reqAction) => reqAction match {
-        case `action` => Success(self)
-        case _ => Failure(CogsParseException(
-            s"Invalid action '$action' for type ${this.getClass.getName}", None
-        ))
-      }
-      case None => Success(self)
+  def validate: Try[Unit] = {
+    val v: Try[Unit] = requiredAction match {
+      case `recordAction` => Success(Unit)
+      case _ => Failure(CogsParseException(
+          s"Invalid action '$recordAction' for type ${this.getClass.getName}", None
+      ))
     }
     
-    v
+    val w: Try[Unit] = v flatMap { _ =>
+      requiredCode match {
+        case `recordCode` => Success(Unit)
+        case _ => Failure(CogsParseException(
+            s"Invalid code '$recordCode' for type ${this.getClass.getName}", None
+        ))
+      }
+    }
+    
+    w
   }
 }
 
 object ServerRecord {
-  def parseResponse[T <: ServerRecord[T]](
+  def parseResponse(
       json: JsValue
-  ): Try[T] = {
+  ): Try[ServerRecord] = {
     { ((json \ "action"), (json \ "code"), (json \ "bad_request)")) match {
       case (JsDefined(JsString("msg")), _, _:JsUndefined) =>
         Success(MessageRecord.parse(json))
@@ -81,7 +87,7 @@ object ServerRecord {
         Success(MessageRecord.parse(json))
       case (_, _, _) => Failure(PubSubException(s"Could not identify record from server: $json"))
     }} match {
-      case Success(JsSuccess(record:T, _)) => Success(record)
+      case Success(JsSuccess(record: ServerRecord, _)) => Success(record)
       case Success(err:JsError) => Failure(
         CogsParseException(
           "Error parsing JSON record from server.", Some(err)

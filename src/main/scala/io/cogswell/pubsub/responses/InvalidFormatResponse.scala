@@ -6,6 +6,7 @@ import play.api.libs.functional.syntax._
 import scala.util.Try
 import scala.util.Success
 import scala.util.Failure
+import io.cogswell.pubsub.records.ServerRecord
 
 case class InvalidFormatResponse(
     sequence: Long,
@@ -13,11 +14,13 @@ case class InvalidFormatResponse(
     action: String,
     message: String,
     details: Option[String] = None
-) extends ServerResponse[InvalidFormatResponse] with SequencedResponse {
-  override val requiredAction: Option[String] = None
-  override val requiredCode: Option[Int] = Some(400)
-  override def self = this
-}
+) extends ServerRecord(
+    recordSequence = Some(sequence),
+    recordAction = Some(action),
+    recordCode = Some(code),
+    requiredAction = None,
+    requiredCode = Some(400)
+)
 
 object InvalidFormatResponse {
   lazy implicit val eventRecordReads: Reads[InvalidFormatResponse] = (

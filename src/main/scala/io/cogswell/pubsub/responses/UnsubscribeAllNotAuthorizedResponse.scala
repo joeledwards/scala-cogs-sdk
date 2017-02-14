@@ -5,6 +5,7 @@ import play.api.libs.json.Reads._
 import play.api.libs.functional.syntax._
 import scala.util.Try
 import java.util.UUID
+import io.cogswell.pubsub.records.ServerRecord
 
 case class UnsubscribeAllNotAuthorizedResponse(
     sequence: Long,
@@ -12,15 +13,17 @@ case class UnsubscribeAllNotAuthorizedResponse(
     code: Int,
     message: String,
     details: Option[String]
-) extends ServerResponse[UnsubscribeAllNotAuthorizedResponse] with SequencedResponse {
-  override val requiredAction = Some("unsubscribe-all")
-  override val requiredCode = Some(401)
-  override def self = this
-}
+) extends ServerRecord(
+    recordSequence = Some(sequence),
+    recordAction = Some(action),
+    recordCode = Some(code),
+    requiredAction = Some("unsubscribe-all"),
+    requiredCode = Some(401)
+)
 
 object UnsubscribeAllNotAuthorizedResponse {
   lazy implicit val eventRecordReads: Reads[UnsubscribeAllNotAuthorizedResponse] = (
-    (JsPath \ "sequence").read[Long]  and
+    (JsPath \ "seq").read[Long]  and
     (JsPath \ "action").read[String]  and
     (JsPath \ "code").read[Int]  and
     (JsPath \ "message").read[String] and

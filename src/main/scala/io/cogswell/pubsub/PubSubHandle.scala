@@ -2,37 +2,31 @@ package io.cogswell.pubsub
 
 import java.util.HashMap
 import java.util.UUID
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.concurrent.Promise
+import scala.concurrent.duration.Duration
 import scala.util.Failure
 import scala.util.Success
+import scala.util.Try
 
-import io.cogswell.pubsub.requests.PublishRequest
-import io.cogswell.util.MarkOnce
-import io.cogswell.util.SetOnce
-import play.api.libs.json.JsArray
-import play.api.libs.json.JsString
-import play.api.libs.json.JsValue
+import io.cogswell.pubsub.records.MessageRecord
+import io.cogswell.pubsub.records.ServerRecord
 import io.cogswell.pubsub.requests.PublishRequest
 import io.cogswell.pubsub.requests.SessionUuidRequest
 import io.cogswell.pubsub.requests.SubscribeRequest
 import io.cogswell.pubsub.requests.SubscriptionsRequest
 import io.cogswell.pubsub.requests.UnsubscribeAllRequest
 import io.cogswell.pubsub.requests.UnsubscribeRequest
-import scala.util.Try
+import io.cogswell.util.MarkOnce
 import io.cogswell.util.Scheduler
-import scala.concurrent.duration.Duration
-import java.util.concurrent.TimeUnit
-import io.cogswell.pubsub.responses.ServerResponse
-import io.cogswell.pubsub.records.ServerRecord
-import io.cogswell.pubsub.records.MessageRecord
-import io.cogswell.exceptions.PubSubException
-import io.cogswell.pubsub.responses.SequencedResponse
-import io.cogswell.pubsub.responses.InvalidFormatResponse
-import io.cogswell.pubsub.responses.SequencedResponse
+import io.cogswell.util.SetOnce
+import play.api.libs.json.JsArray
+import play.api.libs.json.JsString
+import play.api.libs.json.JsValue
 
 /**
  * This is the class through which all interactions with the
@@ -105,11 +99,34 @@ class PubSubHandle(val keys: Seq[String], val options: PubSubOptions)(
         case SocketRecordEvent(record) => {
           println(s"Socket record: $record")
           
+          // All parsed JSON responses can be observed by the raw record listener.
+          Try(sendEvent(PubSubRawRecordEvent(record)))
+          
           { ServerRecord.parseResponse(record) flatMap {
-            case r: MessageRecord => Try(sendEvent(PubSubMessageEvent(r)))
-            //case _ => Failure(new PubSubException(
-            //    s"Server record could not be categorized: $record"
-            //))
+            case r: MessageRecord => {
+              val event = PubSubMessageEvent(r)
+              
+              // Send to the dedicated channel listener if specified.
+              Try(Option(channelHandlers.get(r.channel)).foreach(_(event)))
+              
+              // All message records are made available to general message listeners.
+              Try(sendEvent(event))
+            }
+            case r: ServerRecord if r.recordSequence != None => {
+              val sequence = r.recordSequence.get
+              
+              r.isErrorResponse match {
+                case true => {
+                  val event = PubSubErrorResponseEvent(r)
+                  Try(sendEvent(event))
+                  Try(Option(outstanding.get(sequence)).foreach(_.failure(event)))
+                }
+                case false => {
+                  Try(Option(outstanding.get(sequence)).foreach(_.success(record)))
+                }
+              }
+            }
+            case _ => Success(Unit)
           } } match {
             case Failure(error) => sendEvent(PubSubErrorEvent(error, None, None))
             case Success(_) =>
