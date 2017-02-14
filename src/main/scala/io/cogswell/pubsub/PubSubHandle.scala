@@ -88,7 +88,7 @@ class PubSubHandle(val keys: Seq[String], val options: PubSubOptions)(
             case Success(_) =>
           }
         }
-        case SocketErrorEvent(error) => {
+        case error: SocketErrorEvent => {
           println(s"Socket error: $error")
           
           Try(sendEvent(PubSubErrorEvent(error, None, None))) match {
