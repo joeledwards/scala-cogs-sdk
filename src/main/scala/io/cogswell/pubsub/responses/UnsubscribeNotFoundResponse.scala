@@ -12,7 +12,7 @@ case class UnsubscribeNotFoundResponse(
     code: Int,
     message: String,
     details: Option[String]
-) extends ServerResponse[UnsubscribeNotFoundResponse] {
+) extends ServerResponse[UnsubscribeNotFoundResponse] with SequencedResponse {
   override val requiredAction = Some("unsubscribe")
   override val requiredCode = Some(404)
   override def self = this

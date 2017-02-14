@@ -10,7 +10,7 @@ case class SubscribeSuccessfulResponse(
     action: String,
     code: Int,
     channels: List[String]
-) extends ServerResponse[SubscribeSuccessfulResponse] {
+) extends ServerResponse[SubscribeSuccessfulResponse] with SequencedResponse {
   override val requiredAction = Some("subscribe")
   override val requiredCode = Some(200)
   override def self = this

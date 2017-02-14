@@ -13,15 +13,15 @@ case class InvalidFormatResponse(
     action: String,
     message: String,
     details: Option[String] = None
-) extends ServerResponse[InvalidFormatResponse] {
+) extends ServerResponse[InvalidFormatResponse] with SequencedResponse {
   override val requiredAction: Option[String] = None
   override val requiredCode: Option[Int] = Some(400)
   override def self = this
 }
 
-object InvlalidFormatResponse {
+object InvalidFormatResponse {
   lazy implicit val eventRecordReads: Reads[InvalidFormatResponse] = (
-    (JsPath \ "sequence").read[Long]  and
+    (JsPath \ "seq").read[Long]  and
     (JsPath \ "code").read[Int]  and
     (JsPath \ "action").read[String]  and
     (JsPath \ "message").read[String]  and

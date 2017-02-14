@@ -12,7 +12,7 @@ case class PublishNotAuthorizedResponse(
     code: Int,
     message: String,
     details: Option[String]
-) extends ServerResponse[PublishNotAuthorizedResponse] {
+) extends ServerResponse[PublishNotAuthorizedResponse] with SequencedResponse {
   override val requiredAction = Some("pub")
   override val requiredCode = Some(401)
   override def self = this

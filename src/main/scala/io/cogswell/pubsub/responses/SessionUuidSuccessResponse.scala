@@ -11,7 +11,7 @@ case class SessionUuidSuccessResponse(
     action: String,
     code: Int,
     message: UUID
-) extends ServerResponse[SessionUuidSuccessResponse] {
+) extends ServerResponse[SessionUuidSuccessResponse] with SequencedResponse {
   override val requiredAction = Some("session-uuid")
   override val requiredCode = Some(200)
   override def self = this

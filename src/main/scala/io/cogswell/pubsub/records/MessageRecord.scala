@@ -15,15 +15,18 @@ case class MessageRecord(
     time: DateTime,
     channel: String,
     message: String
-)
+) extends ServerRecord[MessageRecord] {
+  override val requiredAction = Some("msg")
+  override def self = this
+}
 
 object MessageRecord {
   lazy implicit val eventRecordReads: Reads[MessageRecord] = (
     (JsPath \ "id").read[UUID]  and
     (JsPath \ "action").read[String]  and
     (JsPath \ "time").read[DateTime]  and
-    (JsPath \ "channel").read[String] and
-    (JsPath \ "message").read[String]
+    (JsPath \ "chan").read[String] and
+    (JsPath \ "msg").read[String]
   )(MessageRecord.apply _)
   
   def parse(json: JsValue): JsResult[MessageRecord] = {

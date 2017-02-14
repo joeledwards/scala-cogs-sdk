@@ -1,11 +1,9 @@
-package io.cogswell.pubsub.responses
+package io.cogswell.exceptions
 
 import play.api.libs.json.JsError
 
-case class ParseException(
+case class CogsParseException(
     message: String,
     jsError: Option[JsError],
     cause: Option[Throwable] = null
-) extends Throwable(message, cause.getOrElse(null)) {
-  
-}
+) extends RuntimeException(message, cause.getOrElse(null))

@@ -12,7 +12,7 @@ case class SubscriptionsNotAuthorizedResponse(
     code: Int,
     message: String,
     details: Option[String]
-) extends ServerResponse[SubscriptionsNotAuthorizedResponse] {
+) extends ServerResponse[SubscriptionsNotAuthorizedResponse] with SequencedResponse {
   override val requiredAction = Some("subscriptions")
   override val requiredCode = Some(401)
   override def self = this

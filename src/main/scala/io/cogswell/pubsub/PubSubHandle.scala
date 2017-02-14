@@ -26,6 +26,13 @@ import scala.util.Try
 import io.cogswell.util.Scheduler
 import scala.concurrent.duration.Duration
 import java.util.concurrent.TimeUnit
+import io.cogswell.pubsub.responses.ServerResponse
+import io.cogswell.pubsub.records.ServerRecord
+import io.cogswell.pubsub.records.MessageRecord
+import io.cogswell.exceptions.PubSubException
+import io.cogswell.pubsub.responses.SequencedResponse
+import io.cogswell.pubsub.responses.InvalidFormatResponse
+import io.cogswell.pubsub.responses.SequencedResponse
 
 /**
  * This is the class through which all interactions with the
@@ -98,13 +105,15 @@ class PubSubHandle(val keys: Seq[String], val options: PubSubOptions)(
         case SocketRecordEvent(record) => {
           println(s"Socket record: $record")
           
-          // TODO: parse the event
-          /*
-          Try(sendEvent(PubSubMessageEvent(message))) match {
+          { ServerRecord.parseResponse(record) flatMap {
+            case r: MessageRecord => Try(sendEvent(PubSubMessageEvent(r)))
+            //case _ => Failure(new PubSubException(
+            //    s"Server record could not be categorized: $record"
+            //))
+          } } match {
             case Failure(error) => sendEvent(PubSubErrorEvent(error, None, None))
             case Success(_) =>
           }
-          */
         }
       }
       

@@ -11,7 +11,7 @@ case class UnsubscribeSuccessfulResponse(
     action: String,
     code: Int,
     channels: List[String]
-) extends ServerResponse[UnsubscribeSuccessfulResponse] {
+) extends ServerResponse[UnsubscribeSuccessfulResponse] with SequencedResponse {
   override val requiredAction = Some("unsubscribe")
   override val requiredCode = Some(200)
   override def self = this

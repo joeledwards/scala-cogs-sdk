@@ -12,7 +12,7 @@ case class UnsubscribeNotAuthorizedResponse(
     code: Int,
     message: String,
     details: Option[String]
-) extends ServerResponse[UnsubscribeNotAuthorizedResponse] {
+) extends ServerResponse[UnsubscribeNotAuthorizedResponse] with SequencedResponse {
   override val requiredAction = Some("unsubscribe")
   override val requiredCode = Some(401)
   override def self = this

@@ -12,7 +12,7 @@ case class PublishNotFoundResponse(
     code: Int,
     message: String,
     details: Option[String]
-) extends ServerResponse[PublishNotFoundResponse] {
+) extends ServerResponse[PublishNotFoundResponse] with SequencedResponse {
   override val requiredAction = Some("pub")
   override val requiredCode = Some(404)
   override def self = this
@@ -20,7 +20,7 @@ case class PublishNotFoundResponse(
 
 object PublishNotFoundResponse {
   lazy implicit val eventRecordReads: Reads[PublishNotFoundResponse] = (
-    (JsPath \ "sequence").read[Long]  and
+    (JsPath \ "seq").read[Long]  and
     (JsPath \ "action").read[String]  and
     (JsPath \ "code").read[Int]  and
     (JsPath \ "message").read[String] and
