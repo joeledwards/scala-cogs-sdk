@@ -113,8 +113,8 @@ class PubSubSocket(
         )
         
         closed onComplete {
-          case Success(_) => eventHandler.foreach(_(SocketCloseEvent(None)))
-          case Failure(error) => eventHandler.foreach(_(SocketCloseEvent(Some(error))))
+          case Success(_) => handleEvent(SocketCloseEvent(None))
+          case Failure(error) => handleEvent(SocketCloseEvent(Some(error)))
         }
         
         Futures.translate(upgrade) {
