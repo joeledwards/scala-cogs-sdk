@@ -297,7 +297,38 @@ class PubSubHandle(val keys: Seq[String], val options: PubSubOptions)(
    */
   def publish(channel: String, message: String): Unit = {
     val (seq, None) = newRequest(false)
-    socket.foreach(_.send(PublishRequest(seq, channel, message).toJson))
+    socket.foreach(_.send(PublishRequest(seq, channel, message, false).toJson))
+  }
+  
+  /**
+   * Publishes a message to the server, expecting an acknowledgement
+   * containing the message ID.
+   * 
+   * @param channel the channel to which the message should be published
+   * @param message the message to publish
+   * 
+   * @return a Future which will be resolved with the UUID of the message on ack,
+   * rejected if there was an error response from the server or an error publishing
+   */
+  def publishWithAck(channel: String, message: String): Future[UUID] = {
+    val (seq, Some(future)) = newRequest(true)
+    
+    Try {
+      socket.foreach(_.send(PublishRequest(seq, channel, message, true).toJson))
+    } match {
+      case Success(_) => {
+        future map { json =>
+          (json \ "id").get match {
+            case JsString(uuid) => UUID.fromString(uuid)
+            case _ => throw new Exception("")
+          }
+        }
+      }
+      case Failure(error) => {
+        outstanding.remove(seq)
+        Future.failed(error)
+      }
+    }
   }
   
   /**

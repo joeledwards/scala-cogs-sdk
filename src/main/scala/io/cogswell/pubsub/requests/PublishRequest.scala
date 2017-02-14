@@ -6,14 +6,16 @@ import play.api.libs.json.Json
 case class PublishRequest (
   sequence: Long,
   channel: String,
-  message: String
+  message: String,
+  ack: Boolean
 ) {
   def toJson: JsValue = {
     Json.obj(
         "seq" -> sequence,
         "action" -> "pub",
         "chan" -> channel,
-        "msg" -> message
+        "msg" -> message,
+        "ack" -> ack
     )
   }
 }
