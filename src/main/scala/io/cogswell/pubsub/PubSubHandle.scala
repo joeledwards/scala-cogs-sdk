@@ -27,6 +27,7 @@ import io.cogswell.util.SetOnce
 import play.api.libs.json.JsArray
 import play.api.libs.json.JsString
 import play.api.libs.json.JsValue
+import com.google.common.base.Throwables
 
 /**
  * This is the class through which all interactions with the
@@ -89,7 +90,7 @@ class PubSubHandle(val keys: Seq[String], val options: PubSubOptions)(
           }
         }
         case error: SocketErrorEvent => {
-          println(s"Socket error: $error")
+          println(s"Socket error: ${Throwables.getStackTraceAsString(error)}")
           
           Try(sendEvent(PubSubErrorEvent(error, None, None))) match {
             case Failure(error) => sendEvent(PubSubErrorEvent(error, None, None))
@@ -105,11 +106,14 @@ class PubSubHandle(val keys: Seq[String], val options: PubSubOptions)(
           { ServerRecord.parseResponse(record) flatMap {
             case r: MessageRecord => {
               val event = PubSubMessageEvent(r)
+              println("Received a message record. Forwarding...")
               
               // Send to the dedicated channel listener if specified.
-              Try(Option(channelHandlers.get(r.channel)).foreach(_(event)))
+              Try(Option(channelHandlers.get(r.channel)).foreach(_(event))) match {
+                case Failure(error) => println(s"channel handler: $error")
+              }
               
-              // All message records are made available to general message listeners.
+              // All message records are made available to general message handler.
               Try(sendEvent(event))
             }
             case r: ServerRecord if r.recordSequence != None => {

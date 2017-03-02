@@ -58,6 +58,7 @@ class PubSubSocket(
     def close(cause: Option[Throwable]): Unit = {
       subscribers.foreach { subscriber =>
         Try {
+          println(s"close() subscriber: $subscriber")
           cause match {
             case None => subscriber.onComplete()
             case Some(error) => subscriber.onError(error)
@@ -72,6 +73,7 @@ class PubSubSocket(
     def publish(message: Message): Unit = {
       subscribers.foreach { subscriber =>
         Try {
+          println(s"publish() subscriber: $subscriber")
           subscriber.onNext(message)
         } match {
           case Failure(error) => handleEvent(SocketErrorEvent(error))
@@ -85,6 +87,7 @@ class PubSubSocket(
   
   private val recordSink: Sink[Message, Future[Done]] = {
     Sink.foreach { case message: TextMessage.Strict =>
+      println(s"recordSink() subscriber: $message")
       Try {
         val json = Json.parse(message.text)
         handleEvent(SocketRecordEvent(json))

@@ -5,5 +5,5 @@ import play.api.libs.json.JsError
 case class CogsParseException(
     message: String,
     jsError: Option[JsError],
-    cause: Option[Throwable] = null
+    cause: Option[Throwable] = None
 ) extends RuntimeException(message, cause.getOrElse(null))

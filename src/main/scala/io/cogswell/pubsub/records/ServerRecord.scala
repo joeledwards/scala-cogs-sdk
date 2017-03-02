@@ -77,10 +77,15 @@ object ServerRecord {
           case ("subscriptions", 401) =>
             Success(SubscriptionsNotAuthorizedResponse.parse(json))
             
+          case ("pub", 200) =>
+            Success(PublishSuccessfulResponse.parse(json))
           case ("pub", 401) =>
             Success(PublishNotAuthorizedResponse.parse(json))
           case ("pub", 404) =>
             Success(PublishNotFoundResponse.parse(json))
+            
+          case ("session-uuid", 200) =>
+            Success(SessionUuidSuccessfulResponse.parse(json))
         }
       }
       case (_, JsDefined(code: JsNumber), JsDefined(_)) if code.value.toInt == 400 =>
