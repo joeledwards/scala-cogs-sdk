@@ -27,7 +27,7 @@ abstract class ServerRecord(
   
   def validate: Try[Unit] = {
     val v: Try[Unit] = requiredAction match {
-      case `recordAction` => Success(Unit)
+      case None | `recordAction` => Success(Unit)
       case _ => Failure(CogsParseException(
           s"Invalid action '$recordAction' for type ${this.getClass.getName}", None
       ))
@@ -35,7 +35,7 @@ abstract class ServerRecord(
     
     val w: Try[Unit] = v flatMap { _ =>
       requiredCode match {
-        case `recordCode` => Success(Unit)
+        case None | `recordCode` => Success(Unit)
         case _ => Failure(CogsParseException(
             s"Invalid code '$recordCode' for type ${this.getClass.getName}", None
         ))
