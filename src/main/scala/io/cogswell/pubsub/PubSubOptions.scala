@@ -8,6 +8,8 @@ case class PubSubOptions (
   url: String,
   autoReconnect: Boolean = true,
   connectTimeout: Duration = Duration(30, TimeUnit.SECONDS),
+  messageHandler: Option[PubSubHandlers.MessageHandler] = None,
+  eventHandler: Option[PubSubHandlers.EventHandler] = None,
   sessionUuid: Option[UUID] = None
 )
 

@@ -37,10 +37,7 @@ import com.google.common.base.Throwables
 class PubSubHandle(val keys: Seq[String], val options: PubSubOptions)(
     implicit ec: ExecutionContext
 ) {
-  type EventHandler = PartialFunction[PubSubEvent, Unit]
-  type MessageHandler = PubSubMessageEvent => Unit
-  
-  private var eventHandler: Option[EventHandler] = None
+  private var eventHandler: Option[PubSubHandlers.EventHandler] = None
   
   private val setupPromise: Promise[PubSubHandle] = Promise[PubSubHandle]
   private val done: MarkOnce = new MarkOnce
@@ -55,7 +52,7 @@ class PubSubHandle(val keys: Seq[String], val options: PubSubOptions)(
   private var sessionId: Option[UUID] = None
   
   private val outstanding = new HashMap[Long, Promise[JsValue]]
-  private val channelHandlers = new HashMap[String, MessageHandler]
+  private val channelHandlers = new HashMap[String, PubSubHandlers.MessageHandler]
   
   reconnect()
   
@@ -111,6 +108,7 @@ class PubSubHandle(val keys: Seq[String], val options: PubSubOptions)(
               // Send to the dedicated channel listener if specified.
               Try(Option(channelHandlers.get(r.channel)).foreach(_(event))) match {
                 case Failure(error) => println(s"channel handler: $error")
+                case Success(_) =>
               }
               
               // All message records are made available to general message handler.
@@ -218,7 +216,7 @@ class PubSubHandle(val keys: Seq[String], val options: PubSubOptions)(
    * @return a Future which, if successful, will contain a Seq of all the
    * channels to which this session is subscribed
    */
-  def subscribe(channel: String)(handler: MessageHandler)(
+  def subscribe(channel: String)(handler: PubSubHandlers.MessageHandler)(
       implicit ec: ExecutionContext
   ): Future[Seq[String]] = {
     channelHandlers.put(channel, handler)
@@ -352,5 +350,5 @@ class PubSubHandle(val keys: Seq[String], val options: PubSubOptions)(
    * @param handler a PartialFunction which can handle any number of the
    * sub types of PubSubEvent
    */
-  def onEvent(handler: EventHandler): Unit = eventHandler = Option(handler)
+  def onEvent(handler: PubSubHandlers.EventHandler): Unit = eventHandler = Option(handler)
 }
