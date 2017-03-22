@@ -37,7 +37,7 @@ import com.google.common.base.Throwables
 class PubSubHandle(val keys: Seq[String], val options: PubSubOptions)(
     implicit ec: ExecutionContext
 ) {
-  private var eventHandler: Option[PubSubHandlers.EventHandler] = None
+  private var eventHandler: Option[PubSubHandlers.EventHandler] = options.eventHandler
   
   private val setupPromise: Promise[PubSubHandle] = Promise[PubSubHandle]
   private val done: MarkOnce = new MarkOnce

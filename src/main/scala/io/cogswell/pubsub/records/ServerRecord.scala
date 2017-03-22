@@ -95,7 +95,7 @@ object ServerRecord {
       case Success(JsSuccess(record: ServerRecord, _)) => Success(record)
       case Success(err:JsError) => Failure(
         CogsParseException(
-          "Error parsing JSON record from server.", Some(err)
+          "Error identifying JSON record from server.", Some(err)
         )
       )
       case Failure(error) => Failure(
