@@ -161,9 +161,8 @@ class PubSubHandle(val keys: Seq[String], val options: PubSubOptions)(
         case Failure(error) => {
           if (!setupPromise.isCompleted) {
             setupPromise.failure(error)
+            done.mark
           }
-          
-          done.mark
         }
       }
     }

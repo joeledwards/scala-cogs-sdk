@@ -22,6 +22,7 @@ object Messages extends App {
     url = url,
     eventHandler = Some({
       case PubSubNewSessionEvent(sessionId) => println(s"New session [${sessionId}]")
+      case PubSubRawRecordEvent(record) => println(s"Raw record: ${record}")
       case PubSubErrorEvent(error, _, _) => {
         error match {
           case CogsParseException(errorMessage, Some(jsonError), _) =>
@@ -30,7 +31,6 @@ object Messages extends App {
             println(s"Connection error: ${error}\n${Throwables.getStackTraceAsString(error)}")
         }
       }
-      case PubSubRawRecordEvent(record) => println(s"Raw record: ${record}")
     })
   )
   

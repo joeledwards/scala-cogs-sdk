@@ -55,6 +55,13 @@ object ServerRecord {
         Success(MessageRecord.parse(json))
       case (JsDefined(JsString(action)), JsDefined(code: JsNumber), _:JsUndefined) => {
         (action, code.value.intValue) match {
+          case ("pub", 200) =>
+            Success(PublishSuccessfulResponse.parse(json))
+          case ("pub", 401) =>
+            Success(PublishNotAuthorizedResponse.parse(json))
+          case ("pub", 404) =>
+            Success(PublishNotFoundResponse.parse(json))
+            
           case ("subscribe", 200) =>
             Success(SubscribeSuccessfulResponse.parse(json))
           case ("subscribe", 401) =>
@@ -76,13 +83,6 @@ object ServerRecord {
             Success(SubscriptionsSuccessfulResponse.parse(json))
           case ("subscriptions", 401) =>
             Success(SubscriptionsNotAuthorizedResponse.parse(json))
-            
-          case ("pub", 200) =>
-            Success(PublishSuccessfulResponse.parse(json))
-          case ("pub", 401) =>
-            Success(PublishNotAuthorizedResponse.parse(json))
-          case ("pub", 404) =>
-            Success(PublishNotFoundResponse.parse(json))
             
           case ("session-uuid", 200) =>
             Success(SessionUuidSuccessfulResponse.parse(json))
