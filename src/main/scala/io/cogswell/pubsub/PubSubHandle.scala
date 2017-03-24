@@ -58,6 +58,8 @@ class PubSubHandle(val keys: Seq[String], val options: PubSubOptions)(
   
   /**
    * Send events to event handler if it is populated and defined for the value.
+   * 
+   * @param event the event which should be delivered to the handler
    */
   private def sendEvent(event: PubSubEvent): Unit = {
     eventHandler.foreach { handler =>
@@ -67,6 +69,9 @@ class PubSubHandle(val keys: Seq[String], val options: PubSubOptions)(
     }
   }
   
+  /**
+   * Establishes the connection to the Pub/Sub server.
+   */
   private def reconnect()(
       implicit ec: ExecutionContext
   ): Unit = {
@@ -297,8 +302,13 @@ class PubSubHandle(val keys: Seq[String], val options: PubSubOptions)(
    * it will be reported to the error handler if it has been set.
    */
   def publish(channel: String, message: String): Unit = {
-    val (seq, None) = newRequest(false)
-    socket.foreach(_.send(PublishRequest(seq, channel, message, false).toJson))
+    Try {
+      val (seq, None) = newRequest(false)
+      socket.foreach(_.send(PublishRequest(seq, channel, message, false).toJson))
+    } match {
+      case Failure(error) => println(s"Error publishing: ${error}\n${Throwables.getStackTraceAsString(error)}")
+      case _ =>
+    }
   }
   
   /**
@@ -321,7 +331,7 @@ class PubSubHandle(val keys: Seq[String], val options: PubSubOptions)(
         future map { json =>
           (json \ "id").get match {
             case JsString(uuid) => UUID.fromString(uuid)
-            case _ => throw new Exception("")
+            case _ => throw new Exception("Message ID not found.")
           }
         }
       }

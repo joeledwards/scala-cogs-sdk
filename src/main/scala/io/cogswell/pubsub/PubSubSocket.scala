@@ -28,7 +28,14 @@ import akka.http.scaladsl.model.headers.RawHeader
 import java.util.UUID
 import io.cogswell.exceptions.PubSubException
 import io.cogswell.util.Futures
+import org.reactivestreams.Subscription
 
+/**
+ * Abstraction of the WebSocket connection to the Pub/Sub server.
+ * 
+ * @param keys the auth keys
+ * @param options the options for tuning and handling events on this socket
+ */
 class PubSubSocket(
     val keys: Seq[String],
     val options: PubSubOptions = PubSubOptions.default
@@ -53,6 +60,13 @@ class PubSubSocket(
     
     override def subscribe(subscriber: Subscriber[_ >: Message]): Unit = {
       subscribers += subscriber
+      val subscription = new Subscription {
+        override def cancel(): Unit = close(None)
+        override def request(demand: Long): Unit = {
+          // TODO: track demand across all subscribers
+        }
+      }
+      subscriber.onSubscribe(subscription)
     }
     
     def close(cause: Option[Throwable]): Unit = {
